@@ -1,50 +1,70 @@
 #!/bin/bash
-#she bang will execute sript in  Linux
+# This script creates instances and updates Route 53 records in AWS
 
 instance=("mongodb" "catalog" "mysql" "rabbitMq" "catalogue" "user" "cart" "shipping" "payment" "web")
 domain_name="daws93.online"
-hosted-zone-id="Z09537313IGF7OTO5RVXH"
-for name in ${instance[@]}; do
-    
-    if [ $name == "shipping" ] || [ $name == "mysql" ]
-    then
+hosted_zone_id="Z09537313IGF7OTO5RVXH"
+
+for name in "${instance[@]}"; do
+    if [ "$name" == "shipping" ] || [ "$name" == "mysql" ]; then
         instance_type="t3.medium"
     else
         instance_type="t3.micro"
     fi
-    echo "creating instance for: $name with instancetype: $instance_type"
-    instance_id=$(aws ec2 run-instances --image-id ami-09c813fb71547fc4f --instance-type  $instance_type --security-group-ids sg-0d185c7bed4d71abf --subnet-id subnet-0c4b9afbef22588bd --query 'Instances[0].InstancId[]' --output text)
-    echo "Instance created for:$name"
     
-     aws ec2 create-tags --resources $instance_id --tags Key=Name,Value=$name
+    echo "Creating instance for: $name with instance type: $instance_type"
+    
+    # Run the instance and capture the instance ID
+    instance_id=$(aws ec2 run-instances --image-id ami-09c813fb71547fc4f --instance-type "$instance_type" --security-group-ids sg-0d185c7bed4d71abf --subnet-id subnet-0c4b9afbef22588bd --query 'Instances[0].InstanceId' --output text)
 
-    if [ $name == "web" ]
-    then
-         aws ec2 wait instance-running --instance-ids $instance_id
-    public_ip= $(aws ec2 describe-instances --instance-ids $instance_id --query 'Reservations[0].Instances[0].[PublicIpAddress]' --output text)
-    ip_to_use=$public_ip
-    else
-    Private_ip= $(aws ec2 describe-instances --instance-ids $instance_id --query 'Reservations[0].Instances[0].[PrivateIpAddress]' --output text)
-    ip_to_use=$private_ip
+    # Debugging output to verify instance_id
+    echo "Instance ID received: $instance_id"
+
+    # Check if instance_id is valid
+    if [ -z "$instance_id" ] || [ "$instance_id" == "None" ]; then
+        echo "Error: Failed to retrieve Instance ID for $name. Skipping to next instance."
+        continue
     fi
-          echo "creating R53 record for $name"
-    aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch '
+    
+    echo "Instance created for $name with Instance ID: $instance_id"
+    
+    # Create tags for the instance
+    aws ec2 create-tags --resources "$instance_id" --tags Key=Name,Value="$name"
+
+    if [ "$name" == "web" ]; then
+        aws ec2 wait instance-running --instance-ids "$instance_id"
+        public_ip=$(aws ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+        ip_to_use="$public_ip"
+    else
+        private_ip=$(aws ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[0].Instances[0].PrivateIpAddress' --output text)
+        ip_to_use="$private_ip"
+    fi
+    
+    # Debugging output to verify IP address
+    echo "IP address for $name (instance $instance_id): $ip_to_use"
+
+    if [ -z "$ip_to_use" ] || [ "$ip_to_use" == "None" ]; then
+        echo "Error: Failed to retrieve IP address for instance $instance_id of $name. Skipping Route 53 update."
+        continue
+    fi
+    
+    echo "Creating Route 53 record for $name with IP: $ip_to_use"
+    
+    # Update Route 53 records
+    aws route53 change-resource-record-sets --hosted-zone-id "$hosted_zone_id" --change-batch "
     {
-        "Comment": "Creating a record set for '$name'"
-        ,"Changes": [{
-        "Action"              : "UPSERT"
-        ,"ResourceRecordSet"  : {
-            "Name"              : "'$name.$domain_name'"
-            ,"Type"             : "A"
-            ,"TTL"              : 1
-            ,"ResourceRecords"  : [{
-                "Value"         : "'$ip_to_use'"
-            }]
-        }
+        \"Comment\": \"Creating a record set for $name\",
+        \"Changes\": [{
+            \"Action\": \"UPSERT\",
+            \"ResourceRecordSet\": {
+                \"Name\": \"$name.$domain_name\",
+                \"Type\": \"A\",
+                \"TTL\": 1,
+                \"ResourceRecords\": [{
+                    \"Value\": \"$ip_to_use\"
+                }]
+            }
         }]
-    }'
+    }"
     
 done
-
-
-
