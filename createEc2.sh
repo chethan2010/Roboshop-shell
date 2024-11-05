@@ -6,7 +6,7 @@ instance=("mongodb" "catalog" "mysql" "rabbitMq" "catalogue" "user" "cart" "ship
 
 for name in ${instance[@]}; do
     
-    if[ $name == "shipping" ] || [ $name == "mysql" ]
+    if [ $name == "shipping" ] || [ $name == "mysql" ]
     then
         instance_type="t3.medium"
     else
