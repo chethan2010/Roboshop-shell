@@ -13,9 +13,9 @@ for name in ${instance[@]}; do
         instance_type="t3.micro"
     fi
     echo "creating instance for: $name with instancetype: $instance_type"
-    instance_id=$(aws ec2 run-instances --image-id ami-09c813fb71547fc4f --instance-type
-     $instance_type --security-group-ids sg-0d185c7bed4d71abf --subnet-id subnet-0c4b9afbef22588bd --query 'Instances[0].InstancId[]' --output text)
-
+    instance_id=$(aws ec2 run-instances --image-id ami-09c813fb71547fc4f --instance-type  $instance_type --security-group-ids sg-0d185c7bed4d71abf --subnet-id subnet-0c4b9afbef22588bd --query 'Instances[0].InstancId[]' --output text)
+    echo "Instance created for:$name"
+    
      aws ec2 create-tags --resources $instance_id --tags Key=Name,Value=$name
 
     if [ $name == "web" ]
