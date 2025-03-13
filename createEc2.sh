@@ -7,9 +7,9 @@ hosted_zone_id="Z0285612191R8C1OBNW9L"
 
 for name in "${instance[@]}"; do
     if [ "$name" == "shipping" ] || [ "$name" == "mysql" ]; then
-        instance_type="t3.medium"
-    else
         instance_type="t3.micro"
+    else
+        instance_type="t2.micro"
     fi
     
     echo "Creating instance for: $name with instance type: $instance_type"
