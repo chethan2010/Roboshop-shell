@@ -3,7 +3,7 @@
 
 instance=("mongodb" "catalog" "mysql" "rabbitMq" "catalogue" "user" "cart" "shipping" "payment" "web")
 domain_name="daws93.online"
-hosted_zone_id="Z09537313IGF7OTO5RVXH"
+hosted_zone_id="Z0285612191R8C1OBNW9L"
 
 for name in "${instance[@]}"; do
     if [ "$name" == "shipping" ] || [ "$name" == "mysql" ]; then
@@ -15,7 +15,7 @@ for name in "${instance[@]}"; do
     echo "Creating instance for: $name with instance type: $instance_type"
     
     # Run the instance and capture the instance ID
-    instance_id=$(aws ec2 run-instances --image-id ami-09c813fb71547fc4f --instance-type "$instance_type" --security-group-ids sg-0d185c7bed4d71abf --subnet-id subnet-0c4b9afbef22588bd --query 'Instances[0].InstanceId' --output text)
+    instance_id=$(aws ec2 run-instances --image-id ami-09c813fb71547fc4f --instance-type "$instance_type" --security-group-ids sg-02150570ccb6d28ff --subnet-id subnet-0fa5324ad15f0aecc --query 'Instances[0].InstanceId' --output text)
 
     # Debugging output to verify instance_id
     echo "Instance ID received: $instance_id"
